@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Sprout.Exam.Business.DataTransferObjects;
 using Sprout.Exam.Common.Enums;
+using Sprout.Exam.WebApp.Helpers;
+using Sprout.Exam.WebApp.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Sprout.Exam.WebApp.Controllers
@@ -15,13 +17,12 @@ namespace Sprout.Exam.WebApp.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class EmployeesController : ControllerBase
-    {
+    {        
+        private EmployeeRepository _employeeRepo;
 
-        private readonly Data.ApplicationDbContext _context;
-
-        public EmployeesController(Data.ApplicationDbContext context)
-        {
-            _context = context;
+        public EmployeesController(EmployeeRepository employeeRepo) //Data.ApplicationDbContext context)
+        {            
+            _employeeRepo = employeeRepo;
         }
 
         /// <summary>
@@ -31,8 +32,8 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {            
-            var result = await _context.Employee.Select(m => m.ToDto()).ToListAsync();
-            return Ok(result);
+            var result = await _employeeRepo.GetEmployees();
+            return Ok(result.Select(x => x.ToDto()).ToList());
         }
 
         /// <summary>
@@ -42,7 +43,7 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {            
-            var result = await _context.Employee.FirstOrDefaultAsync(m => m.Id == id);
+            var result = await _employeeRepo.GetEmployee(id);
             return Ok(result.ToDto());
         }
 
@@ -53,21 +54,21 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(EditEmployeeDto input)
         {
+            if (!ModelState.IsValid)
+            {
+                return Ok("Data incomplete.");
+            }
+
             try
             {
-                var item = await _context.Employee.FirstOrDefaultAsync(m => m.Id == input.Id);
-                if (item == null) return NotFound();
-                item.FullName = input.FullName;
-                item.Tin = input.Tin;
-                item.BirthDate = input.Birthdate;
-                item.EmployeeTypeId = input.TypeId;            
-                await _context.SaveChangesAsync();
+                var item = await _employeeRepo.UpdateEmployee(input);
+                await _employeeRepo.Save();
                 return Ok(item);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (ArgumentOutOfRangeException)
             {
                 return NotFound();
-            }
+            }            
         }
 
         /// <summary>
@@ -76,25 +77,15 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Post(CreateEmployeeDto input)
-        {            
-            try
-            {                
-                var nuEmployee = new Models.Employee
-                {
-                    BirthDate = input.Birthdate,
-                    FullName = input.FullName,                    
-                    Tin = input.Tin,
-                    EmployeeTypeId = input.TypeId
-                };
-                _context.Add(nuEmployee);
-                await _context.SaveChangesAsync();
-
-                return Created($"/api/employees/{nuEmployee.Id}", nuEmployee.Id);
-            }
-            catch(Exception)
+        {
+            if (!ModelState.IsValid)
             {
-                return NotFound("An unexpected error occured");
+                return Ok("Data incomplete.");
             }
+
+            var nuEmployee = await _employeeRepo.AddEmployee(input);
+            await _employeeRepo.Save();
+            return Created($"/api/employees/{nuEmployee.Id}", nuEmployee.Id);            
         }
 
 
@@ -106,17 +97,14 @@ namespace Sprout.Exam.WebApp.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             try
-            {                
-                var result = await _context.Employee.FirstOrDefaultAsync(m => m.Id == id);
-                if (result == null) return NotFound();
-                _context.Employee.Remove(result);
-                await _context.SaveChangesAsync();
-
+            {
+                await _employeeRepo.DeleteEmployee(id);
+                await _employeeRepo.Save();
                 return Ok(id);
             }
-            catch(Exception)
+            catch (ArgumentOutOfRangeException)
             {
-                return NotFound("An unexpected error occured");
+                return NotFound();
             }
         }
 
@@ -131,26 +119,11 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <returns></returns>
         [HttpPost("{id}/calculate")]
         public async Task<IActionResult> Calculate(SalaryDto input) //int id,decimal absentDays,decimal workedDays)
-        {            
-            var result = await _context.Employee.FirstOrDefaultAsync(m => m.Id == input.Id);
-
+        {
+            var result = await _employeeRepo.GetEmployee(input.Id);
             if (result == null) return NotFound();
-            if (!Enum.IsDefined(typeof(EmployeeType), result.EmployeeTypeId)) return NotFound("Employee Type not found");
-            
-            var calculator = new SalaryCalculator
-            {
-                EmployeeTypeId = result.EmployeeTypeId,
-                AbsentDays = input.AbsentDays,
-                WorkedDays = input.WorkedDays
-            };
-            try
-            {
-                return Ok(calculator.Calculate());
-            }
-            catch(Exception)
-            {
-                return NotFound("An unexpected error occured");
-            }
+            if (!Enum.IsDefined(typeof(EmployeeType), result.EmployeeTypeId)) return NotFound("Employee Type not found");             
+            return Ok(SalaryCalculator.Calculate(result.EmployeeTypeId, input));            
         }
 
     }

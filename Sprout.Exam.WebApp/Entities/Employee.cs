@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Sprout.Exam.WebApp.Models
+namespace Sprout.Exam.WebApp.Entities
 {
     public class Employee
     {

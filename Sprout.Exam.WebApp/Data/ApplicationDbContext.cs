@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Sprout.Exam.WebApp.Entities;
 using Sprout.Exam.WebApp.Models;
 using System;
 using System.Collections.Generic;

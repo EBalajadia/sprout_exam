@@ -1,9 +1,10 @@
-﻿using Sprout.Exam.Common.Enums;
+﻿using Sprout.Exam.Business.DataTransferObjects;
+using Sprout.Exam.Common.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sprout.Exam.Business.DataTransferObjects
+namespace Sprout.Exam.WebApp.Helpers
 {
     public class SalaryCalculator : SalaryDto
     {        
@@ -35,6 +36,17 @@ namespace Sprout.Exam.Business.DataTransferObjects
             }
 
             return Math.Round(salary, 2);
+        }
+
+        public static decimal Calculate(int employeeTypeId, SalaryDto input)
+        {
+            var calculator = new SalaryCalculator
+            {
+                EmployeeTypeId = employeeTypeId,
+                AbsentDays = input.AbsentDays,
+                WorkedDays = input.WorkedDays
+            };
+            return calculator.Calculate();
         }
     }
 }
