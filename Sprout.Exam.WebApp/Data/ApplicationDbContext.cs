@@ -18,6 +18,6 @@ namespace Sprout.Exam.WebApp.Data
         {
         }
 
-        public DbSet<Business.DataTransferObjects.EmployeeDto> Employee { get; set; }
+        public DbSet<Employee> Employee { get; set; }
     }
 }

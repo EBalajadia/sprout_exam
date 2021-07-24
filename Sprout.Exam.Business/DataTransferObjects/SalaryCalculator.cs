@@ -5,10 +5,8 @@ using System.Text;
 
 namespace Sprout.Exam.Business.DataTransferObjects
 {
-    public class SalaryCalculator
-    {
-        public decimal DaysAbsent { get; set; }
-        public decimal DaysWorked { get; set; }
+    public class SalaryCalculator : SalaryDto
+    {        
         public int EmployeeTypeId { get; set; }        
 
         public decimal Calculate()
@@ -20,15 +18,16 @@ namespace Sprout.Exam.Business.DataTransferObjects
             {
                 case EmployeeType.Regular:
                     int monthlyRate = 20000;
-                    decimal deductions = (monthlyRate / 22) * this.DaysAbsent;
+
+                    decimal deductions = decimal.Divide(monthlyRate , 22m) * this.AbsentDays;
                     decimal deductedSalary = monthlyRate - deductions;
 
-                    decimal taxDeductions = deductedSalary * 0.12m;
+                    decimal taxDeductions = monthlyRate * 0.12m;
                     salary = deductedSalary - taxDeductions;
                     break;
 
                 case EmployeeType.Contractual:
-                    salary = 50 * this.DaysWorked;
+                    salary = 50 * this.WorkedDays;
                     break;
 
                 default:

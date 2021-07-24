@@ -30,10 +30,8 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> Get()
-        {
-            //var result = await Task.FromResult(StaticEmployees.ResultList);
-
-            var result = await _context.Employee.ToListAsync();                          
+        {            
+            var result = await _context.Employee.Select(m => m.ToDto()).ToListAsync();
             return Ok(result);
         }
 
@@ -43,11 +41,9 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <returns></returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
-        {
-            //var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
-
+        {            
             var result = await _context.Employee.FirstOrDefaultAsync(m => m.Id == id);
-            return Ok(result);
+            return Ok(result.ToDto());
         }
 
         /// <summary>
@@ -57,15 +53,14 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(EditEmployeeDto input)
         {
-            //var item = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == input.Id));
-            var item = await _context.Employee.FirstOrDefaultAsync(m => m.Id == input.Id);
-            if (item == null) return NotFound();
-            item.FullName = input.FullName;
-            item.Tin = input.Tin;
-            item.Birthdate = input.Birthdate.ToString("yyyy-MM-dd");
-            item.TypeId = input.TypeId;
             try
             {
+                var item = await _context.Employee.FirstOrDefaultAsync(m => m.Id == input.Id);
+                if (item == null) return NotFound();
+                item.FullName = input.FullName;
+                item.Tin = input.Tin;
+                item.BirthDate = input.Birthdate;
+                item.EmployeeTypeId = input.TypeId;            
                 await _context.SaveChangesAsync();
                 return Ok(item);
             }
@@ -81,31 +76,25 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Post(CreateEmployeeDto input)
-        {
+        {            
+            try
+            {                
+                var nuEmployee = new Models.Employee
+                {
+                    BirthDate = input.Birthdate,
+                    FullName = input.FullName,                    
+                    Tin = input.Tin,
+                    EmployeeTypeId = input.TypeId
+                };
+                _context.Add(nuEmployee);
+                await _context.SaveChangesAsync();
 
-            var id = await Task.FromResult(StaticEmployees.ResultList.Max(m => m.Id) + 1);
-
-            StaticEmployees.ResultList.Add(new EmployeeDto
+                return Created($"/api/employees/{nuEmployee.Id}", nuEmployee.Id);
+            }
+            catch(Exception)
             {
-                Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
-                FullName = input.FullName,
-                Id = id,
-                Tin = input.Tin,
-                TypeId = input.TypeId
-            });
-
-            //int id = await _context.Employee.MaxAsync(m => m.Id) + 1;
-            //_context.Add(new EmployeeDto
-            //{
-            //    Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
-            //    FullName = input.FullName,
-            //    Id = id,
-            //    Tin = input.Tin,
-            //    TypeId = input.TypeId
-            //});
-            //await _context.SaveChangesAsync();
-
-            return Created($"/api/employees/{id}", id);
+                return NotFound("An unexpected error occured");
+            }
         }
 
 
@@ -116,14 +105,19 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            //var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
-            var result = await _context.Employee.FirstOrDefaultAsync(m => m.Id == id);
-            if (result == null) return NotFound();
-            //StaticEmployees.ResultList.RemoveAll(m => m.Id == id);
-            _context.Employee.Remove(result);
-            await _context.SaveChangesAsync();
+            try
+            {                
+                var result = await _context.Employee.FirstOrDefaultAsync(m => m.Id == id);
+                if (result == null) return NotFound();
+                _context.Employee.Remove(result);
+                await _context.SaveChangesAsync();
 
-            return Ok(id);
+                return Ok(id);
+            }
+            catch(Exception)
+            {
+                return NotFound("An unexpected error occured");
+            }
         }
 
 
@@ -136,38 +130,26 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <param name="workedDays"></param>
         /// <returns></returns>
         [HttpPost("{id}/calculate")]
-        public async Task<IActionResult> Calculate(int id,decimal absentDays,decimal workedDays)
-        {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
+        public async Task<IActionResult> Calculate(SalaryDto input) //int id,decimal absentDays,decimal workedDays)
+        {            
+            var result = await _context.Employee.FirstOrDefaultAsync(m => m.Id == input.Id);
 
             if (result == null) return NotFound();
-            if (!Enum.IsDefined(typeof(EmployeeType), result.TypeId)) return NotFound("Employee Type not found");
-
-            //var type = (EmployeeType) result.TypeId;
-            //return type switch
-            //{
-            //    EmployeeType.Regular =>
-            //        //create computation for regular.
-            //        Ok(25000),
-            //    EmployeeType.Contractual =>
-            //        //create computation for contractual.
-            //        Ok(20000),
-            //    _ => NotFound("Employee Type not found")
-            //};
+            if (!Enum.IsDefined(typeof(EmployeeType), result.EmployeeTypeId)) return NotFound("Employee Type not found");
             
             var calculator = new SalaryCalculator
             {
-                EmployeeTypeId = result.TypeId,
-                DaysAbsent = absentDays,
-                DaysWorked = workedDays
+                EmployeeTypeId = result.EmployeeTypeId,
+                AbsentDays = input.AbsentDays,
+                WorkedDays = input.WorkedDays
             };
             try
             {
                 return Ok(calculator.Calculate());
             }
-            catch(Exception ex)
+            catch(Exception)
             {
-                return Ok(ex.Message);
+                return NotFound("An unexpected error occured");
             }
         }
 
