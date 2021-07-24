@@ -30,7 +30,7 @@ namespace Sprout.Exam.WebApp
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddScoped<Services.EmployeeRepository, Services.EmployeeRepository>();
+            services.AddScoped<Services.IEmployeeRepository, Services.EmployeeRepository>();
 
             services.AddDatabaseDeveloperPageExceptionFilter();
 

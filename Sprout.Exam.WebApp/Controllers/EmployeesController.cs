@@ -56,13 +56,16 @@ namespace Sprout.Exam.WebApp.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return Ok("Data incomplete.");
+                return BadRequest();
             }
 
             try
             {
                 var item = await _employeeRepo.UpdateEmployee(input);
-                await _employeeRepo.Save();
+                if (!(await _employeeRepo.Save()))
+                {
+                    throw new Exception("Save failed.");
+                }
                 return Ok(item);
             }
             catch (ArgumentOutOfRangeException)
@@ -80,11 +83,14 @@ namespace Sprout.Exam.WebApp.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return Ok("Data incomplete.");
+                return BadRequest();
             }
 
             var nuEmployee = await _employeeRepo.AddEmployee(input);
-            await _employeeRepo.Save();
+            if(!( await _employeeRepo.Save()))
+            {
+                throw new Exception("Save failed.");
+            }
             return Created($"/api/employees/{nuEmployee.Id}", nuEmployee.Id);            
         }
 

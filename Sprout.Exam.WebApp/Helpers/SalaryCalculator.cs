@@ -28,7 +28,7 @@ namespace Sprout.Exam.WebApp.Helpers
                     break;
 
                 case EmployeeType.Contractual:
-                    salary = 50 * this.WorkedDays;
+                    salary = 500 * this.WorkedDays;
                     break;
 
                 default:
@@ -40,6 +40,8 @@ namespace Sprout.Exam.WebApp.Helpers
 
         public static decimal Calculate(int employeeTypeId, SalaryDto input)
         {
+            if (input == null) throw new ArgumentNullException(nameof(input));
+
             var calculator = new SalaryCalculator
             {
                 EmployeeTypeId = employeeTypeId,

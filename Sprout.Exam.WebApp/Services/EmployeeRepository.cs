@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sprout.Exam.WebApp.Services
 {
-    public class EmployeeRepository
+    public class EmployeeRepository : IEmployeeRepository
     {
         private readonly ApplicationDbContext _context;
 
@@ -61,9 +61,9 @@ namespace Sprout.Exam.WebApp.Services
             return item;
         }
 
-        public async Task Save()
+        public async Task<bool> Save()
         {
-            await _context.SaveChangesAsync();
+            return (await _context.SaveChangesAsync()) > 0;
         }
     }
 }
