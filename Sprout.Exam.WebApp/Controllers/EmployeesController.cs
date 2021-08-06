@@ -18,9 +18,9 @@ namespace Sprout.Exam.WebApp.Controllers
     [ApiController]
     public class EmployeesController : ControllerBase
     {        
-        private EmployeeRepository _employeeRepo;
+        private IEmployeeRepository _employeeRepo;
 
-        public EmployeesController(EmployeeRepository employeeRepo) //Data.ApplicationDbContext context)
+        public EmployeesController(IEmployeeRepository employeeRepo) //Data.ApplicationDbContext context)
         {            
             _employeeRepo = employeeRepo;
         }
